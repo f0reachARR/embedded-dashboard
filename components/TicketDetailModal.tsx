@@ -40,12 +40,22 @@ export default function TicketDetailModal({ seatNumber, onClose, onTicketApprove
   // ステータスごとにグループ化
   const groupedTickets = tickets.reduce((acc, ticket) => {
     const statusName = ticket.status.name;
+    const statusId = ticket.status.id;
     if (!acc[statusName]) {
-      acc[statusName] = [];
+      acc[statusName] = { tickets: [], statusId };
     }
-    acc[statusName].push(ticket);
+    acc[statusName].tickets.push(ticket);
     return acc;
-  }, {} as Record<string, Ticket[]>);
+  }, {} as Record<string, { tickets: Ticket[]; statusId: number }>);
+
+  // ステータスグループを配列に変換して並べ替え（審査待ちを最優先）
+  const sortedStatusGroups = Object.entries(groupedTickets).sort(([nameA, dataA], [nameB, dataB]) => {
+    // 審査待ち（ステータスID: 4）を最優先
+    if (dataA.statusId === 4) return -1;
+    if (dataB.statusId === 4) return 1;
+    // それ以外はステータスIDの昇順
+    return dataA.statusId - dataB.statusId;
+  });
   const formatDate = (dateString?: string) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -107,7 +117,7 @@ export default function TicketDetailModal({ seatNumber, onClose, onTicketApprove
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>座席 {seatNumber} の審査待ちチケット</h2>
+          <h2>座席 {seatNumber} のチケット</h2>
           <button className="modal-close" onClick={onClose}>
             ✕
           </button>
@@ -127,10 +137,26 @@ export default function TicketDetailModal({ seatNumber, onClose, onTicketApprove
           ) : tickets.length === 0 ? (
             <p className="no-tickets">このプロジェクトにチケットはありません</p>
           ) : (
-            <div className="ticket-list">
-              {Object.entries(groupedTickets).map(([statusName, statusTickets]) => (
+            <>
+              <div className="ticket-summary">
+                <h3 className="summary-title">ステータス別件数</h3>
+                <div className="summary-items">
+                  {sortedStatusGroups.map(([statusName, { tickets: statusTickets, statusId }]) => (
+                    <div key={statusName} className={`summary-item ${statusId === 4 ? 'summary-pending' : ''}`}>
+                      <span className="summary-status">{statusName}:</span>
+                      <span className="summary-count">{statusTickets.length}件</span>
+                    </div>
+                  ))}
+                  <div className="summary-item summary-total">
+                    <span className="summary-status">合計:</span>
+                    <span className="summary-count">{tickets.length}件</span>
+                  </div>
+                </div>
+              </div>
+              <div className="ticket-list">
+              {sortedStatusGroups.map(([statusName, { tickets: statusTickets, statusId }]) => (
                 <div key={statusName} className="status-group">
-                  <h3 className="status-group-header">
+                  <h3 className={`status-group-header ${statusId === 4 ? 'status-pending-review' : ''}`}>
                     {statusName} ({statusTickets.length}件)
                   </h3>
                   {statusTickets.map((ticket) => (
@@ -183,7 +209,8 @@ export default function TicketDetailModal({ seatNumber, onClose, onTicketApprove
                   ))}
                 </div>
               ))}
-            </div>
+              </div>
+            </>
           )}
         </div>
       </div>

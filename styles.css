@@ -429,6 +429,60 @@ h1 {
   }
 }
 
+/* チケットサマリー */
+.ticket-summary {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.summary-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #495057;
+  margin: 0 0 12px 0;
+}
+
+.summary-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.summary-item.summary-pending {
+  background: #fff3cd;
+  border-color: #ff9800;
+}
+
+.summary-item.summary-total {
+  background: #e3f2fd;
+  border-color: #2196f3;
+  font-weight: bold;
+}
+
+.summary-status {
+  color: #495057;
+  font-weight: 500;
+}
+
+.summary-count {
+  color: #212529;
+  font-weight: bold;
+}
+
 /* ステータスグループ */
 .status-group {
   margin-bottom: 24px;
@@ -447,6 +501,12 @@ h1 {
   background: #f0f0f0;
   border-left: 4px solid #2196f3;
   border-radius: 4px;
+}
+
+.status-group-header.status-pending-review {
+  background: #fff3cd;
+  border-left-color: #ff9800;
+  color: #856404;
 }
 
 /* ローディングインジケーター */
