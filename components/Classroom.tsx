@@ -1,4 +1,3 @@
-import React from "react";
 import Seat from "./Seat";
 import type { Ticket } from "./App";
 

@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import StatusBar from "./StatusBar";
 import Classroom from "./Classroom";
 import Legend from "./Legend";
 import TicketDetailModal from "./TicketDetailModal";
+import { extractSeatNumber } from "../utils";
+import { UPDATE_INTERVAL, API_ENDPOINTS } from "../constants";
 
 export interface Ticket {
   id: number;
@@ -36,19 +38,6 @@ interface RedmineData {
   issues: Ticket[];
 }
 
-const UPDATE_INTERVAL = 10000; // 10秒
-
-function extractSeatNumber(projectName: string): number | null {
-  const match = projectName.match(/組み込みシステム基礎\s*\((\d+)\)/);
-  if (match && match[1]) {
-    const num = parseInt(match[1], 10);
-    if (num >= 1 && num <= 80) {
-      return num;
-    }
-  }
-  return null;
-}
-
 export default function App() {
   const [highlightedSeats, setHighlightedSeats] = useState<Set<number>>(new Set());
   const [seatTickets, setSeatTickets] = useState<Map<number, Ticket[]>>(new Map());
@@ -61,7 +50,7 @@ export default function App() {
     try {
       setStatus({ text: "接続中...", type: "active" });
 
-      const response = await fetch("/api/tickets");
+      const response = await fetch(API_ENDPOINTS.TICKETS);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -74,7 +63,7 @@ export default function App() {
 
       if (data.issues && Array.isArray(data.issues)) {
         data.issues.forEach((issue) => {
-          if (issue.project && issue.project.name) {
+          if (issue.project?.name) {
             const seatNum = extractSeatNumber(issue.project.name);
             if (seatNum !== null) {
               seatNumbers.add(seatNum);
