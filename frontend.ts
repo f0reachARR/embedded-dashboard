@@ -1,5 +1,5 @@
 // ===== 設定 =====
-const UPDATE_INTERVAL = 10000; // 10秒
+const UPDATE_INTERVAL = 5000; // 10秒
 
 // ===== グローバル変数 =====
 let highlightedSeats = new Set<number>();
