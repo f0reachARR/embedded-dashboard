@@ -29,6 +29,36 @@ async function fetchRedmineTickets() {
   return await response.json();
 }
 
+// ===== チケットステータスを更新 =====
+async function updateTicketStatus(ticketId: number, statusId: number) {
+  if (!API_KEY || API_KEY === "YOUR_API_KEY_HERE") {
+    throw new Error("APIキーが設定されていません");
+  }
+
+  const response = await fetch(
+    `${REDMINE_URL}/issues/${ticketId}.json`,
+    {
+      method: "PUT",
+      headers: {
+        "X-Redmine-API-Key": API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        issue: {
+          status_id: statusId,
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+  }
+
+  return response.status === 204 ? { success: true } : await response.json();
+}
+
 // ===== Bunサーバー起動 =====
 Bun.serve({
   port: 3000,
@@ -47,6 +77,35 @@ Bun.serve({
             JSON.stringify({
               error: (error as Error).message,
               issues: [],
+            }),
+            {
+              status: 500,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+        }
+      },
+    },
+    "/api/tickets/:id/approve": {
+      PUT: async (req) => {
+        try {
+          const ticketId = parseInt(req.params.id, 10);
+          const APPROVED_STATUS_ID = 3; // 審査通過
+
+          await updateTicketStatus(ticketId, APPROVED_STATUS_ID);
+
+          return new Response(
+            JSON.stringify({ success: true, message: "チケットを審査通過に変更しました" }),
+            {
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+        } catch (error) {
+          console.error("Update Error:", error);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: (error as Error).message,
             }),
             {
               status: 500,

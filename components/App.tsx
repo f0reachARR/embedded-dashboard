@@ -115,6 +115,11 @@ export default function App() {
     setSelectedSeat(null);
   };
 
+  const handleTicketApproved = () => {
+    // チケットが承認されたらデータを再取得
+    fetchRedmineData();
+  };
+
   return (
     <>
       <h1>2025年度 プロジェクト実習（組み込みシステム基礎）座席表</h1>
@@ -170,6 +175,7 @@ export default function App() {
           seatNumber={selectedSeat}
           tickets={seatTickets.get(selectedSeat) || []}
           onClose={handleCloseModal}
+          onTicketApproved={handleTicketApproved}
         />
       )}
     </>

@@ -1,13 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import type { Ticket } from "./App";
 
 interface TicketDetailModalProps {
   seatNumber: number;
   tickets: Ticket[];
   onClose: () => void;
+  onTicketApproved: () => void;
 }
 
-export default function TicketDetailModal({ seatNumber, tickets, onClose }: TicketDetailModalProps) {
+export default function TicketDetailModal({ seatNumber, tickets, onClose, onTicketApproved }: TicketDetailModalProps) {
+  const [approvingTickets, setApprovingTickets] = useState<Set<number>>(new Set());
+  const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const formatDate = (dateString?: string) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -18,6 +21,46 @@ export default function TicketDetailModal({ seatNumber, tickets, onClose }: Tick
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const handleApprove = async (ticketId: number) => {
+    setApprovingTickets(prev => new Set(prev).add(ticketId));
+    setNotification(null);
+
+    try {
+      const response = await fetch(`/api/tickets/${ticketId}/approve`, {
+        method: "PUT",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "ステータスの更新に失敗しました");
+      }
+
+      setNotification({
+        type: "success",
+        message: `チケット #${ticketId} を審査通過に変更しました`,
+      });
+
+      // 3秒後にモーダルを閉じてデータを再取得
+      setTimeout(() => {
+        onTicketApproved();
+        onClose();
+      }, 1500);
+    } catch (error) {
+      console.error("Approval error:", error);
+      setNotification({
+        type: "error",
+        message: `エラー: ${(error as Error).message}`,
+      });
+    } finally {
+      setApprovingTickets(prev => {
+        const next = new Set(prev);
+        next.delete(ticketId);
+        return next;
+      });
+    }
   };
 
   return (
@@ -31,6 +74,12 @@ export default function TicketDetailModal({ seatNumber, tickets, onClose }: Tick
         </div>
 
         <div className="modal-body">
+          {notification && (
+            <div className={`notification ${notification.type}`}>
+              {notification.message}
+            </div>
+          )}
+
           {tickets.length === 0 ? (
             <p className="no-tickets">審査待ちのチケットはありません</p>
           ) : (
@@ -70,6 +119,15 @@ export default function TicketDetailModal({ seatNumber, tickets, onClose }: Tick
                       <p>{ticket.description}</p>
                     </div>
                   )}
+                  <div className="ticket-actions">
+                    <button
+                      className="approve-button"
+                      onClick={() => handleApprove(ticket.id)}
+                      disabled={approvingTickets.has(ticket.id)}
+                    >
+                      {approvingTickets.has(ticket.id) ? "処理中..." : "審査通過"}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
