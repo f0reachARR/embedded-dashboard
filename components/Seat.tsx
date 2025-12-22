@@ -15,18 +15,14 @@ export default function Seat({ number, colorClass, isHighlighted, tickets, onCli
 
   return (
     <div
-      className={`seat ${colorClass} ${isHighlighted ? "highlight" : ""} ${tickets.length > 0 ? "clickable" : ""}`}
+      className={`seat ${colorClass} ${isHighlighted ? "highlight" : ""} clickable`}
       data-seat={number}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
-      onClick={() => {
-        if (tickets.length > 0) {
-          onClick(number);
-        }
-      }}
+      onClick={() => onClick(number)}
     >
       {number}
-      <Tooltip tickets={tickets} visible={showTooltip} />
+      {tickets.length > 0 && <Tooltip tickets={tickets} visible={showTooltip} />}
     </div>
   );
 }

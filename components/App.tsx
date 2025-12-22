@@ -116,7 +116,7 @@ export default function App() {
   };
 
   const handleTicketApproved = () => {
-    // チケットが承認されたらデータを再取得
+    // チケットが承認されたら審査待ち一覧を再取得
     fetchRedmineData();
   };
 
@@ -173,7 +173,6 @@ export default function App() {
       {selectedSeat !== null && (
         <TicketDetailModal
           seatNumber={selectedSeat}
-          tickets={seatTickets.get(selectedSeat) || []}
           onClose={handleCloseModal}
           onTicketApproved={handleTicketApproved}
         />

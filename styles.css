@@ -428,3 +428,56 @@ h1 {
     transform: translateY(0);
   }
 }
+
+/* ステータスグループ */
+.status-group {
+  margin-bottom: 24px;
+}
+
+.status-group:last-child {
+  margin-bottom: 0;
+}
+
+.status-group-header {
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 12px 0;
+  padding: 8px 12px;
+  background: #f0f0f0;
+  border-left: 4px solid #2196f3;
+  border-radius: 4px;
+}
+
+/* ローディングインジケーター */
+.loading-indicator {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.loading-indicator p {
+  color: #666;
+  font-size: 16px;
+  margin: 0;
+}
+
+.loading-indicator::before {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 16px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #2196f3;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
