@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { Ticket } from "./App";
+import { formatDate } from "../utils";
+import { REDMINE_STATUS, API_ENDPOINTS } from "../constants";
 
 interface TicketDetailModalProps {
   seatNumber: number;
@@ -14,10 +16,10 @@ export default function TicketDetailModal({ seatNumber, onClose, onTicketApprove
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   // チケット取得の共通処理
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/tickets/seat/${seatNumber}`);
+      const response = await fetch(API_ENDPOINTS.TICKET_BY_SEAT(seatNumber));
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -30,12 +32,12 @@ export default function TicketDetailModal({ seatNumber, onClose, onTicketApprove
     } finally {
       setLoading(false);
     }
-  };
+  }, [seatNumber]);
 
   // 初回読み込み
   useEffect(() => {
     fetchTickets();
-  }, [seatNumber]);
+  }, [fetchTickets]);
 
   // ステータスごとにグループ化
   const groupedTickets = tickets.reduce((acc, ticket) => {
@@ -49,31 +51,20 @@ export default function TicketDetailModal({ seatNumber, onClose, onTicketApprove
   }, {} as Record<string, { tickets: Ticket[]; statusId: number }>);
 
   // ステータスグループを配列に変換して並べ替え（審査待ちを最優先）
-  const sortedStatusGroups = Object.entries(groupedTickets).sort(([nameA, dataA], [nameB, dataB]) => {
-    // 審査待ち（ステータスID: 4）を最優先
-    if (dataA.statusId === 4) return -1;
-    if (dataB.statusId === 4) return 1;
+  const sortedStatusGroups = Object.entries(groupedTickets).sort(([_nameA, dataA], [_nameB, dataB]) => {
+    // 審査待ちを最優先
+    if (dataA.statusId === REDMINE_STATUS.PENDING_REVIEW) return -1;
+    if (dataB.statusId === REDMINE_STATUS.PENDING_REVIEW) return 1;
     // それ以外はステータスIDの昇順
     return dataA.statusId - dataB.statusId;
   });
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("ja-JP", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
+  
   const handleApprove = async (ticketId: number) => {
     setApprovingTickets(prev => new Set(prev).add(ticketId));
     setNotification(null);
 
     try {
-      const response = await fetch(`/api/tickets/${ticketId}/approve`, {
+      const response = await fetch(API_ENDPOINTS.APPROVE_TICKET(ticketId), {
         method: "PUT",
       });
 
@@ -142,7 +133,7 @@ export default function TicketDetailModal({ seatNumber, onClose, onTicketApprove
                 <h3 className="summary-title">ステータス別件数</h3>
                 <div className="summary-items">
                   {sortedStatusGroups.map(([statusName, { tickets: statusTickets, statusId }]) => (
-                    <div key={statusName} className={`summary-item ${statusId === 4 ? 'summary-pending' : ''}`}>
+                    <div key={statusName} className={`summary-item ${statusId === REDMINE_STATUS.PENDING_REVIEW ? 'summary-pending' : ''}`}>
                       <span className="summary-status">{statusName}:</span>
                       <span className="summary-count">{statusTickets.length}件</span>
                     </div>
@@ -156,7 +147,7 @@ export default function TicketDetailModal({ seatNumber, onClose, onTicketApprove
               <div className="ticket-list">
               {sortedStatusGroups.map(([statusName, { tickets: statusTickets, statusId }]) => (
                 <div key={statusName} className="status-group">
-                  <h3 className={`status-group-header ${statusId === 4 ? 'status-pending-review' : ''}`}>
+                  <h3 className={`status-group-header ${statusId === REDMINE_STATUS.PENDING_REVIEW ? 'status-pending-review' : ''}`}>
                     {statusName} ({statusTickets.length}件)
                   </h3>
                   {statusTickets.map((ticket) => (
@@ -194,7 +185,7 @@ export default function TicketDetailModal({ seatNumber, onClose, onTicketApprove
                           <p>{ticket.description}</p>
                         </div>
                       )}
-                      {ticket.status.id === 4 && (
+                      {ticket.status.id === REDMINE_STATUS.PENDING_REVIEW && (
                         <div className="ticket-actions">
                           <button
                             className="approve-button"

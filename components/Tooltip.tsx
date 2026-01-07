@@ -1,4 +1,3 @@
-import React from "react";
 import type { Ticket } from "./App";
 
 interface TooltipProps {
