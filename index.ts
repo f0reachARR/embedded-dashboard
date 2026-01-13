@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { basicAuth } from "hono/basic-auth";
 import index from "./index.html";
 import type { Ticket } from "./types";
 import { extractSeatNumber } from "./utils";
@@ -12,6 +13,10 @@ const API_KEY = process.env.REDMINE_API_KEY || "";
 const TRACKER_ID = parseInt(process.env.TRACKER_ID || "5", 10); // 課題
 const STATUS_ID = parseInt(process.env.STATUS_ID || "4", 10); // 審査待ち
 const APPROVED_STATUS_ID = parseInt(process.env.APPROVED_STATUS_ID || "3", 10); // 審査通過
+
+// Basic認証の設定
+const BASIC_AUTH_USERNAME = process.env.BASIC_AUTH_USERNAME || "admin";
+const BASIC_AUTH_PASSWORD = process.env.BASIC_AUTH_PASSWORD || "password";
 
 interface RedmineProject {
   id: number;
@@ -149,6 +154,15 @@ async function updateTicketStatus(ticketId: number, statusId: number) {
 
 const app = new Hono();
 
+// Basic認証ミドルウェアを適用
+app.use(
+  "*",
+  basicAuth({
+    username: BASIC_AUTH_USERNAME,
+    password: BASIC_AUTH_PASSWORD,
+  }),
+);
+
 app.onError((err, c) => {
   console.error("Server Error:", err);
   return c.json({ success: false, error: err.message }, 500);
@@ -222,3 +236,4 @@ Bun.serve({
 console.log("🚀 Server running at http://localhost:3000");
 console.log(`📊 Redmine URL: ${REDMINE_URL}`);
 console.log(`🔑 API Key configured: ${API_KEY ? "✓" : "✗"}`);
+console.log(`🔐 Basic Auth: Username="${BASIC_AUTH_USERNAME}"`);
