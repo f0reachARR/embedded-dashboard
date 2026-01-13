@@ -149,11 +149,12 @@ async function updateTicketStatus(ticketId: number, statusId: number) {
 
 const app = new Hono();
 
+app.onError((err, c) => {
+  console.error("Server Error:", err);
+  return c.json({ success: false, error: err.message }, 500);
+});
+
 export const routes = app
-  .onError((err, c) => {
-    console.error("Server Error:", err);
-    return c.json({ success: false, error: err.message }, 500);
-  })
   .get("/api/tickets", async (c) => {
     const data = await fetchRedmineTickets();
     return c.json(data);

@@ -84,12 +84,6 @@ export default function TicketDetailModal({
         );
       }
 
-      const responseData = await response.json();
-
-      if (!responseData.success) {
-        throw new Error(responseData.error || "ステータスの更新に失敗しました");
-      }
-
       setNotification({
         type: "success",
         message: `チケット #${ticketId} を審査通過に変更しました`,
