@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import useSWR from "swr";
-import { fetcher } from "./lib/fetcher";
 import type { Ticket } from "../types";
+import { client } from "./lib/client";
 
 interface TicketDetailModalProps {
   seatNumber: number;
@@ -24,7 +24,12 @@ export default function TicketDetailModal({
 
   const { data, error, mutate } = useSWR<{ issues: Ticket[] }>(
     `/api/tickets/seat/${seatNumber}`,
-    fetcher,
+    async () => {
+      const res = await client.api.tickets.seat[":seatNumber"].$get({
+        param: { seatNumber: `${seatNumber}` },
+      });
+      return await res.json();
+    },
   );
 
   const tickets = data?.issues || [];
@@ -43,7 +48,7 @@ export default function TicketDetailModal({
 
   // ステータスグループを配列に変換して並べ替え（審査待ちを最優先）
   const sortedStatusGroups = Object.entries(groupedTickets).sort(
-    ([nameA, dataA], [nameB, dataB]) => {
+    ([, dataA], [, dataB]) => {
       // 審査待ち（ステータスID: 4）を最優先
       if (dataA.statusId === 4) return -1;
       if (dataB.statusId === 4) return 1;
@@ -68,13 +73,20 @@ export default function TicketDetailModal({
     setNotification(null);
 
     try {
-      const response = await fetch(`/api/tickets/${ticketId}/approve`, {
-        method: "PUT",
+      const response = await client.api.tickets[":id"].approve.$get({
+        param: { id: `${ticketId}` },
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `HTTP error! status: ${response.status}, body: ${errorText}`,
+        );
+      }
 
       const responseData = await response.json();
 
-      if (!response.ok || !responseData.success) {
+      if (!responseData.success) {
         throw new Error(responseData.error || "ステータスの更新に失敗しました");
       }
 

@@ -12,8 +12,11 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@hono/zod-validator": "^0.7.6",
+    "hono": "^4.11.4",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "swr": "^2.3.8"
+    "swr": "^2.3.8",
+    "zod": "^4.3.5"
   }
 }

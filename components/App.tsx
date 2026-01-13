@@ -1,28 +1,18 @@
 import React, { useState, useEffect } from "react";
 import useSWR from "swr";
-import { fetcher } from "./lib/fetcher";
 import StatusBar from "./StatusBar";
 import Classroom from "./Classroom";
 import Legend from "./Legend";
 import TicketDetailModal from "./TicketDetailModal";
 import type { Ticket } from "../types";
+import { extractSeatNumber } from "../utils";
+import { client } from "./lib/client";
 
 interface RedmineData {
   issues: Ticket[];
 }
 
 const UPDATE_INTERVAL = 10000; // 10秒
-
-function extractSeatNumber(projectName: string): number | null {
-  const match = projectName.match(/組み込みシステム基礎\s*\((\d+)\)/);
-  if (match && match[1]) {
-    const num = parseInt(match[1], 10);
-    if (num >= 1 && num <= 80) {
-      return num;
-    }
-  }
-  return null;
-}
 
 export default function App() {
   const [highlightedSeats, setHighlightedSeats] = useState<Set<number>>(
@@ -36,10 +26,17 @@ export default function App() {
   const [lastUpdate, setLastUpdate] = useState("--:--:--");
   const [ticketCount, setTicketCount] = useState(0);
 
-  const { data, error, mutate } = useSWR<RedmineData>("/api/tickets", fetcher, {
-    refreshInterval: UPDATE_INTERVAL,
-    revalidateOnFocus: true,
-  });
+  const { data, error, mutate } = useSWR<RedmineData>(
+    "/api/tickets",
+    async () => {
+      const res = await client.api.tickets.$get();
+      return await res.json();
+    },
+    {
+      refreshInterval: UPDATE_INTERVAL,
+      revalidateOnFocus: true,
+    },
+  );
 
   useEffect(() => {
     if (error) {
