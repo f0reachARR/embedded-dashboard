@@ -1,4 +1,5 @@
 import index from "./index.html";
+import type { Ticket } from "./types";
 
 // ===== 設定 =====
 const REDMINE_URL =
@@ -6,19 +7,6 @@ const REDMINE_URL =
 const API_KEY = process.env.REDMINE_API_KEY || "";
 const TRACKER_ID = parseInt(process.env.TRACKER_ID || "5", 10); // 課題
 const STATUS_ID = parseInt(process.env.STATUS_ID || "4", 10); // 審査待ち
-
-interface RedmineIssue {
-  id: number;
-  subject: string;
-  status: {
-    id: number;
-    name: string;
-  };
-  project: {
-    id: number;
-    name: string;
-  };
-}
 
 interface RedmineProject {
   id: number;
@@ -131,7 +119,7 @@ async function fetchAllTicketsBySeat(seatNumber: number) {
     throw new Error(`HTTP error! status: ${issuesResponse.status}`);
   }
 
-  const issuesData: { issues: RedmineIssue[]; total_count: number } =
+  const issuesData: { issues: Ticket[]; total_count: number } =
     await issuesResponse.json();
 
   return { issues: issuesData.issues, total_count: issuesData.total_count };

@@ -1,5 +1,5 @@
 import React from "react";
-import type { Ticket } from "./App";
+import type { Ticket } from "../types";
 
 interface TooltipProps {
   tickets: Ticket[];
@@ -12,11 +12,13 @@ export default function Tooltip({ tickets, visible }: TooltipProps) {
   }
 
   return (
-    <div className="seat-tooltip">
-      <div className="tooltip-header">審査待ちチケット ({tickets.length}件)</div>
-      <ul className="tooltip-list">
+    <div className='seat-tooltip'>
+      <div className='tooltip-header'>
+        審査待ちチケット ({tickets.length}件)
+      </div>
+      <ul className='tooltip-list'>
         {tickets.map((ticket) => (
-          <li key={ticket.id} className="tooltip-item">
+          <li key={ticket.id} className='tooltip-item'>
             #{ticket.id}: {ticket.subject}
           </li>
         ))}

@@ -5,34 +5,7 @@ import StatusBar from "./StatusBar";
 import Classroom from "./Classroom";
 import Legend from "./Legend";
 import TicketDetailModal from "./TicketDetailModal";
-
-export interface Ticket {
-  id: number;
-  subject: string;
-  project: {
-    id: number;
-    name: string;
-  };
-  tracker: {
-    id: number;
-    name: string;
-  };
-  status: {
-    id: number;
-    name: string;
-  };
-  priority?: {
-    id: number;
-    name: string;
-  };
-  author?: {
-    id: number;
-    name: string;
-  };
-  created_on?: string;
-  updated_on?: string;
-  description?: string;
-}
+import type { Ticket } from "../types";
 
 interface RedmineData {
   issues: Ticket[];
@@ -52,8 +25,12 @@ function extractSeatNumber(projectName: string): number | null {
 }
 
 export default function App() {
-  const [highlightedSeats, setHighlightedSeats] = useState<Set<number>>(new Set());
-  const [seatTickets, setSeatTickets] = useState<Map<number, Ticket[]>>(new Map());
+  const [highlightedSeats, setHighlightedSeats] = useState<Set<number>>(
+    new Set(),
+  );
+  const [seatTickets, setSeatTickets] = useState<Map<number, Ticket[]>>(
+    new Map(),
+  );
   const [selectedSeat, setSelectedSeat] = useState<number | null>(null);
   const [status, setStatus] = useState({ text: "接続中...", type: "active" });
   const [lastUpdate, setLastUpdate] = useState("--:--:--");
@@ -121,22 +98,34 @@ export default function App() {
     <>
       <h1>2025年度 プロジェクト実習（組み込みシステム基礎）座席表</h1>
 
-      <StatusBar status={status} lastUpdate={lastUpdate} ticketCount={ticketCount} />
+      <StatusBar
+        status={status}
+        lastUpdate={lastUpdate}
+        ticketCount={ticketCount}
+      />
 
-      <div className="container">
+      <div className='container'>
         <Classroom
-          title="6-301"
+          title='6-301'
           seatGroups={[
             { seats: [1, 2, 3, 4, 5, 6, 7, 8], colorClass: "blue-1" },
             { seats: [9, 10, 11, 12], colorClass: "blue-1", marginTop: true },
             { seats: [13, 14, 15, 16], colorClass: "pink-1" },
-            { seats: [17, 18, 19, 20, 21, 22, 23, 24], colorClass: "pink-1", marginTop: true },
+            {
+              seats: [17, 18, 19, 20, 21, 22, 23, 24],
+              colorClass: "pink-1",
+              marginTop: true,
+            },
           ]}
           seatGroups2={[
             { seats: [25, 26, 27, 28, 29, 30, 31, 32], colorClass: "green-1" },
             { seats: [33, 34, 35, 36], colorClass: "green-1", marginTop: true },
             { seats: [37, 38, 39, 40], colorClass: "purple-1" },
-            { seats: [41, 42, 43, 44, 45, 46, 47, 48], colorClass: "purple-1", marginTop: true },
+            {
+              seats: [41, 42, 43, 44, 45, 46, 47, 48],
+              colorClass: "purple-1",
+              marginTop: true,
+            },
           ]}
           highlightedSeats={highlightedSeats}
           seatTickets={seatTickets}
@@ -144,7 +133,7 @@ export default function App() {
         />
 
         <Classroom
-          title="8-312"
+          title='8-312'
           seatGroups={[
             { seats: [49, 50, 51, 52], colorClass: "blue-2" },
             { seats: [53, 54, 55, 56], colorClass: "blue-2", marginTop: true },
@@ -152,12 +141,24 @@ export default function App() {
           ]}
           seatGroups2={[
             { seats: [61, 62, 63, 64], colorClass: "blue-2" },
-            { seats: [65, 66, 67, 68], colorClass: "orange-1", marginTop: true },
-            { seats: [69, 70, 71, 72], colorClass: "orange-2", marginTop: true },
+            {
+              seats: [65, 66, 67, 68],
+              colorClass: "orange-1",
+              marginTop: true,
+            },
+            {
+              seats: [69, 70, 71, 72],
+              colorClass: "orange-2",
+              marginTop: true,
+            },
           ]}
           seatGroups3={[
             { seats: [73, 74, 75, 76], colorClass: "orange-1", marginTop: 84 },
-            { seats: [77, 78, 79, 80], colorClass: "orange-1", marginTop: true },
+            {
+              seats: [77, 78, 79, 80],
+              colorClass: "orange-1",
+              marginTop: true,
+            },
           ]}
           highlightedSeats={highlightedSeats}
           seatTickets={seatTickets}
