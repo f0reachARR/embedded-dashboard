@@ -163,11 +163,6 @@ app.use(
   }),
 );
 
-app.onError((err, c) => {
-  console.error("Server Error:", err);
-  return c.json({ success: false, error: err.message }, 500);
-});
-
 export const routes = app
   .get("/api/tickets", async (c) => {
     const data = await fetchRedmineTickets();
