@@ -7,6 +7,24 @@ const API_KEY = process.env.REDMINE_API_KEY || "";
 const TRACKER_ID = parseInt(process.env.TRACKER_ID || "5", 10); // 課題
 const STATUS_ID = parseInt(process.env.STATUS_ID || "4", 10); // 審査待ち
 
+interface RedmineIssue {
+  id: number;
+  subject: string;
+  status: {
+    id: number;
+    name: string;
+  };
+  project: {
+    id: number;
+    name: string;
+  };
+}
+
+interface RedmineProject {
+  id: number;
+  name: string;
+}
+
 // ===== プロジェクト名から座席番号を抽出 =====
 function extractSeatNumber(projectName: string): number | null {
   const match = projectName.match(/組み込みシステム基礎\s*\((\d+)\)/);
@@ -42,41 +60,63 @@ async function fetchRedmineTickets() {
   return await response.json();
 }
 
+// ===== 全プロジェクトを取得 =====
+async function fetchAllProjects() {
+  if (!API_KEY || API_KEY === "YOUR_API_KEY_HERE") {
+    throw new Error("APIキーが設定されていません");
+  }
+
+  const projects: RedmineProject[] = [];
+  for (let offset = 0; ; offset += 100) {
+    const response = await fetch(
+      `${REDMINE_URL}/projects.json?limit=100&offset=${offset}`,
+      {
+        headers: {
+          "X-Redmine-API-Key": API_KEY,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    projects.push(...data.projects);
+
+    if (data.projects.length === 0) {
+      break;
+    }
+  }
+
+  return { projects };
+}
+
+const { projects } = await fetchAllProjects();
+console.log(`Fetched ${projects.length} projects from Redmine.`);
+
 // ===== 座席番号ごとの全チケット取得 =====
 async function fetchAllTicketsBySeat(seatNumber: number) {
   if (!API_KEY || API_KEY === "YOUR_API_KEY_HERE") {
     throw new Error("APIキーが設定されていません");
   }
 
-  // 1. プロジェクト一覧を取得
-  const projectsResponse = await fetch(
-    `${REDMINE_URL}/projects.json?limit=100`,
-    {
-      headers: {
-        "X-Redmine-API-Key": API_KEY,
-        "Content-Type": "application/json",
-      },
-    },
-  );
-
-  if (!projectsResponse.ok) {
-    throw new Error(`HTTP error! status: ${projectsResponse.status}`);
-  }
-
-  const projectsData = await projectsResponse.json();
-
-  // 2. 該当する座席のプロジェクトを見つける（extractSeatNumberを使用）
-  const targetProject = projectsData.projects.find((project: any) => {
+  // 1. 該当する座席のプロジェクトを見つける（extractSeatNumberを使用）
+  const targetProject = projects.find((project: any) => {
     const extractedSeatNumber = extractSeatNumber(project.name);
     return extractedSeatNumber === seatNumber;
   });
 
   // プロジェクトが見つからない場合は空配列を返す
   if (!targetProject) {
-    return { issues: [], total_count: 0 };
+    throw new Error(
+      `Seat number ${seatNumber} に対応するプロジェクトが見つかりません`,
+    );
   }
 
-  // 3. プロジェクトIDでチケットを検索
+  // 2. プロジェクトIDでチケットを検索
   const issuesResponse = await fetch(
     `${REDMINE_URL}/issues.json?project_id=${targetProject.id}&tracker_id=${TRACKER_ID}&limit=100&status_id=*`,
     {
@@ -91,7 +131,8 @@ async function fetchAllTicketsBySeat(seatNumber: number) {
     throw new Error(`HTTP error! status: ${issuesResponse.status}`);
   }
 
-  const issuesData = await issuesResponse.json();
+  const issuesData: { issues: RedmineIssue[]; total_count: number } =
+    await issuesResponse.json();
 
   return { issues: issuesData.issues, total_count: issuesData.total_count };
 }

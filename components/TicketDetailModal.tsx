@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import useSWR from "swr";
+import { fetcher } from "./lib/fetcher";
 import type { Ticket } from "./App";
 
 interface TicketDetailModalProps {
@@ -8,34 +10,16 @@ interface TicketDetailModalProps {
 }
 
 export default function TicketDetailModal({ seatNumber, onClose, onTicketApproved }: TicketDetailModalProps) {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(true);
   const [approvingTickets, setApprovingTickets] = useState<Set<number>>(new Set());
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // チケット取得の共通処理
-  const fetchTickets = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/tickets/seat/${seatNumber}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+  const { data, error, mutate } = useSWR<{ issues: Ticket[] }>(
+    `/api/tickets/seat/${seatNumber}`,
+    fetcher
+  );
 
-      const data = await response.json();
-      setTickets(data.issues || []);
-    } catch (error) {
-      console.error("Failed to fetch seat tickets:", error);
-      setTickets([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 初回読み込み
-  useEffect(() => {
-    fetchTickets();
-  }, [seatNumber]);
+  const tickets = data?.issues || [];
+  const loading = !data && !error;
 
   // ステータスごとにグループ化
   const groupedTickets = tickets.reduce((acc, ticket) => {
@@ -77,10 +61,10 @@ export default function TicketDetailModal({ seatNumber, onClose, onTicketApprove
         method: "PUT",
       });
 
-      const data = await response.json();
+      const responseData = await response.json();
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "ステータスの更新に失敗しました");
+      if (!response.ok || !responseData.success) {
+        throw new Error(responseData.error || "ステータスの更新に失敗しました");
       }
 
       setNotification({
@@ -88,8 +72,8 @@ export default function TicketDetailModal({ seatNumber, onClose, onTicketApprove
         message: `チケット #${ticketId} を審査通過に変更しました`,
       });
 
-      // チケットを再取得（共通処理を使用）
-      await fetchTickets();
+      // SWRキャッシュを再検証
+      await mutate();
 
       // 親コンポーネントに通知（審査待ち一覧の更新用）
       onTicketApproved();

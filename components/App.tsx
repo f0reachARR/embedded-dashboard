@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import useSWR from "swr";
+import { fetcher } from "./lib/fetcher";
 import StatusBar from "./StatusBar";
 import Classroom from "./Classroom";
 import Legend from "./Legend";
@@ -57,55 +59,50 @@ export default function App() {
   const [lastUpdate, setLastUpdate] = useState("--:--:--");
   const [ticketCount, setTicketCount] = useState(0);
 
-  const fetchRedmineData = async () => {
-    try {
-      setStatus({ text: "接続中...", type: "active" });
-
-      const response = await fetch("/api/tickets");
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: RedmineData = await response.json();
-
-      const seatNumbers = new Set<number>();
-      const ticketsBySeat = new Map<number, Ticket[]>();
-
-      if (data.issues && Array.isArray(data.issues)) {
-        data.issues.forEach((issue) => {
-          if (issue.project && issue.project.name) {
-            const seatNum = extractSeatNumber(issue.project.name);
-            if (seatNum !== null) {
-              seatNumbers.add(seatNum);
-
-              if (!ticketsBySeat.has(seatNum)) {
-                ticketsBySeat.set(seatNum, []);
-              }
-              ticketsBySeat.get(seatNum)?.push(issue);
-            }
-          }
-        });
-      }
-
-      setHighlightedSeats(seatNumbers);
-      setSeatTickets(ticketsBySeat);
-      setStatus({ text: "正常", type: "active" });
-      setTicketCount(data.issues?.length || 0);
-
-      const now = new Date();
-      setLastUpdate(now.toLocaleTimeString("ja-JP"));
-    } catch (error) {
-      console.error("データ取得エラー:", error);
-      setStatus({ text: `エラー: ${(error as Error).message}`, type: "error" });
-    }
-  };
+  const { data, error, mutate } = useSWR<RedmineData>("/api/tickets", fetcher, {
+    refreshInterval: UPDATE_INTERVAL,
+    revalidateOnFocus: true,
+  });
 
   useEffect(() => {
-    fetchRedmineData();
-    const interval = setInterval(fetchRedmineData, UPDATE_INTERVAL);
-    return () => clearInterval(interval);
-  }, []);
+    if (error) {
+      console.error("データ取得エラー:", error);
+      setStatus({ text: `エラー: ${error.message}`, type: "error" });
+      return;
+    }
+
+    if (!data) {
+      setStatus({ text: "接続中...", type: "active" });
+      return;
+    }
+
+    const seatNumbers = new Set<number>();
+    const ticketsBySeat = new Map<number, Ticket[]>();
+
+    if (data.issues && Array.isArray(data.issues)) {
+      data.issues.forEach((issue) => {
+        if (issue.project && issue.project.name) {
+          const seatNum = extractSeatNumber(issue.project.name);
+          if (seatNum !== null) {
+            seatNumbers.add(seatNum);
+
+            if (!ticketsBySeat.has(seatNum)) {
+              ticketsBySeat.set(seatNum, []);
+            }
+            ticketsBySeat.get(seatNum)?.push(issue);
+          }
+        }
+      });
+    }
+
+    setHighlightedSeats(seatNumbers);
+    setSeatTickets(ticketsBySeat);
+    setStatus({ text: "正常", type: "active" });
+    setTicketCount(data.issues?.length || 0);
+
+    const now = new Date();
+    setLastUpdate(now.toLocaleTimeString("ja-JP"));
+  }, [data, error]);
 
   const handleSeatClick = (seatNum: number) => {
     setSelectedSeat(seatNum);
@@ -116,8 +113,8 @@ export default function App() {
   };
 
   const handleTicketApproved = () => {
-    // チケットが承認されたら審査待ち一覧を再取得
-    fetchRedmineData();
+    // チケットが承認されたらSWRキャッシュを再検証
+    mutate();
   };
 
   return (
